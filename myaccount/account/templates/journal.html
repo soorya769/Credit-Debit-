@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Journal App</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    table, th, td {
+      border: 1px solid black;
+    }
+
+    .highlight {
+      background-color: yellow;
+    }
+  </style>
+</head>
+<body>
+  <h1>Journal Entry</h1>
+  <form id="journalForm">
+    <label for="date">Date:</label>
+    <input type="date" id="date" required><br>
+
+    <label for="parti">Particulars:</label>
+    <select id="parti" required>
+      <option value="School fee">School fee</option>
+      <option value="Electricity bill">Electricity bill</option>
+      <option value="Salary">Salary</option>
+    </select><br>
+
+    <label for="particulars">Transaction type:</label>
+    <select id="particulars" onchange="updateAmountFields()" required>
+      <option value="debit">Debit</option>
+      <option value="credit">Credit</option>
+    </select><br>
+
+    <label for="debit">Debit Amount:</label>
+    <input type="number" id="debit" placeholder="Enter debit amount" disabled><br>
+
+    <label for="credit">Credit Amount:</label>
+    <input type="number" id="credit" placeholder="Enter credit amount" disabled><br>
+
+    <button type="button" onclick="submitEntry()">Submit</button>
+  </form>
+
+  <h2>Journal Entries</h2>
+
+  <!-- Add Search Box and Button -->
+  <label for="searchDate">Search by Date:</label>
+  <input type="date" id="searchDate">
+  <button type="button" onclick="searchByDate()">Search</button>
+
+  <table id="journalTable">
+    <thead>
+      <tr>
+        <th>Sl. No</th>
+        <th>Date</th>
+        <th>Particulars</th>
+        <th>Transaction type</th>
+        <th>Debit</th>
+        <th>Credit</th>
+      </tr>
+    </thead>
+    <tbody id="journalList"></tbody>
+  </table>
+
+  <div id="summary"></div>
+
+  <script>
+    let journalEntries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+
+    function updateAmountFields() {
+      const amountType = document.getElementById('particulars').value;
+      const debitInput = document.getElementById('debit');
+      const creditInput = document.getElementById('credit');
+
+      if (amountType === 'debit') {
+        debitInput.removeAttribute('disabled');
+        creditInput.setAttribute('disabled', 'true');
+      } else {
+        creditInput.removeAttribute('disabled');
+        debitInput.setAttribute('disabled', 'true');
+      }
+    }
+
+    function submitEntry() {
+      const date = document.getElementById('date').value;
+      const parti = document.getElementById('parti').value;
+      const particulars = document.getElementById('particulars').value;
+      const debit = parseFloat(document.getElementById('debit').value) || 0;
+      const credit = parseFloat(document.getElementById('credit').value) || 0;
+
+      const entry = { date, parti, particulars, debit, credit };
+      journalEntries.push(entry);
+
+      updateList();
+      saveToLocalStorage();
+    }
+
+    function updateList() {
+      const tableBody = document.getElementById('journalList');
+      tableBody.innerHTML = '';
+
+      let totalDebit = 0;
+      let totalCredit = 0;
+
+      for (let i = 0; i < journalEntries.length; i++) {
+        const entry = journalEntries[i];
+
+        const row = tableBody.insertRow(i);
+        row.insertCell(0).innerHTML = i + 1;
+        row.insertCell(1).innerHTML = entry.date;
+        row.insertCell(2).innerHTML = entry.parti;
+        row.insertCell(3).innerHTML = entry.particulars;
+        row.insertCell(4).innerHTML = entry.debit;
+        row.insertCell(5).innerHTML = entry.credit;
+
+        totalDebit += entry.debit;
+        totalCredit += entry.credit;
+      }
+
+      const summary = document.getElementById('summary');
+      const currentBalance = totalCredit - totalDebit;
+
+      summary.innerHTML = `
+        <table>
+          <tr>
+            <td><strong>Total Debit:</strong> ${totalDebit}</td>
+            <td><strong>Total Credit:</strong> ${totalCredit}</td>
+            <td><strong>Current Balance:</strong> ${currentBalance}</td>
+          </tr>
+        </table>
+      `;
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('journalEntries', JSON.stringify(journalEntries));
+    }
+
+    function searchByDate() {
+      const searchDate = document.getElementById('searchDate').value;
+      const tableBody = document.getElementById('journalList');
+
+      // Remove previous highlights
+      const highlightedRows = tableBody.getElementsByClassName('highlight');
+      for (let row of highlightedRows) {
+        row.classList.remove('highlight');
+      }
+
+      for (let i = 0; i < journalEntries.length; i++) {
+        const entry = journalEntries[i];
+        const row = tableBody.rows[i];
+
+        if (entry.date === searchDate) {
+          row.classList.add('highlight');
+        }
+      }
+    }
+  </script>
+
+  <form action="{% url 'logout' %}" method="post" class="nav-link">
+    {% csrf_token %}
+    <button type="submit">
+        <i class="nav-icon far fa-circle text-info"></i>
+        <p>Logout</p>
+    </button>
+</form>
+
+</body>
+</html>
